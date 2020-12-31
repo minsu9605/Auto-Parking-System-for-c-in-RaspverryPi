@@ -1,0 +1,84 @@
+#include <wiringPi.h>
+#include <stdio.h>
+#include <softPwm.h>
+#include <stdlib.h>
+#include <time.h>
+#define TRIG 0
+#define ECHO 1
+#define INFRARED 11
+#define REDLED 12
+#define GREENLED 13
+#define SERVO 4
+#define FLAME 2
+#define BUZZER 5
+
+float GetDistance() {
+	int pulse_start, pulse_end;
+	float distance;
+
+	digitalWrite(TRIG, LOW);
+	delay(500);
+
+	digitalWrite(TRIG, HIGH);
+	delayMicroseconds(10);
+	digitalWrite(TRIG, LOW);	while(digitalRead(ECHO) == 0) {		pulse_start = micros();
+	}
+	
+	while(digitalRead(ECHO) == 1) {
+		pulse_end = micros();
+	}
+
+	distance = (pulse_end - pulse_start)/29.0/2.0/10;	printf("\n%.2fm\n", distance);
+	return distance;
+}
+
+int main (void) {
+	if (wiringPiSetup() == -1)
+		return 1;
+	pinMode(TRIG, OUTPUT);
+	pinMode(ECHO, INPUT);
+	pinMode(SWITCH, INPUT);
+	pinMode(SWITCH, PUD_DOWN);
+	pinMode(FLAME, INPUT);
+	pinMode(BUZZER, OUTPUT);
+	pinMode(REDLED, OUTPUT);
+	pinMode(GREENLED, OUTPUT);
+
+	softPwmCreate(SERVO, 0, 200);
+	float distance;
+	for (;;) {
+		distance = GetDistance();
+		delay(1000);
+
+		if(distance <= 1) {
+			digitalWrite(REDLED, HIGH);
+			digitalWrite(GREENLED, LOW);
+			printf("There's no parking space.\n");			}
+		else {
+			digitalWrite(REDLED, LOW);				digitalWrite(GREENLED, HIGH);				printf("There's a parking space.\n");			       
+			if(digitalRead(INFRARED) == 1) {     		                  printf("yes");	       	                  		                  softPwmWrite(SERVO, 15);				  	delay(3000);
+				  softPwmWrite(SERVO, 24); 
+              		        }
+ 		}
+	if(digitalRead(FLAME) == HIGH) {			digitalWrite(BUZZER, LOW);
+		}
+		else if(digitalRead(FLAME) == LOW) {
+			softPwmWrite(SERVO, 15);
+
+			while(digitalRead(FLAME)==LOW) {
+				printf("\nEMERGENCY!! ESCAPE!");
+				digitalWrite(BUZZER, HIGH);
+				digitalWrite(REDLED, HIGH);
+				digitalWrite(GREENLED, HIGH);
+				delay(500);
+				digitalWrite(REDLED, LOW);
+				digitalWrite(GREENLED, LOW);
+				delay(500);
+			}
+			softPwmWrite(SERVO, 24);
+		}
+	}
+	return 0;
+}
+
+
